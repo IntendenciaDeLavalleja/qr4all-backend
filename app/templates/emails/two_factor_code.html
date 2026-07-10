@@ -1,0 +1,43 @@
+{% extends "emails/base.html" %}
+
+{% block content %}
+
+  <!-- Greeting -->
+  <p style="font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:16px;color:#111827;margin:0 0 8px;line-height:1.5;">
+    Hola, <strong>{{ user_name }}</strong>.
+  </p>
+
+  <!-- Main message -->
+  <p style="font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:14px;color:#475569;margin:0 0 24px;line-height:1.6;">
+    Usá el siguiente código para completar tu verificación de seguridad en {{ app_name | default("QR4All Lavalleja") }}:
+  </p>
+
+  <!-- ── Verification Code Box ─────────────────────────────── -->
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="margin-bottom:28px;">
+    <tr>
+      <td align="center" style="background-color:#EEF2FF;border:1px solid #DCE3F5;border-radius:14px;padding:24px 16px;">
+        <span style="font-family:'Courier New',Consolas,'Lucida Console',monospace;font-size:38px;font-weight:800;letter-spacing:12px;color:#021A54;display:inline-block;">
+          {{ code }}
+        </span>
+      </td>
+    </tr>
+  </table>
+
+  <!-- Expiry notice -->
+  <p style="font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:13px;color:#64748B;margin:0 0 20px;line-height:1.6;">
+    Este código vence en <strong style="color:#111827;">{{ expiration_minutes | default(10) }} minutos</strong>.
+  </p>
+
+  <!-- Divider -->
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="margin-bottom:20px;">
+    <tr>
+      <td style="border-top:1px solid #E5E7EB;"></td>
+    </tr>
+  </table>
+
+  <!-- Security note -->
+  <p style="font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:13px;color:#64748B;margin:0;line-height:1.6;">
+    Si no solicitaste este acceso, podés ignorar este correo. Tu cuenta seguirá protegida.
+  </p>
+
+{% endblock %}

@@ -1,0 +1,72 @@
+{% extends "emails/base.html" %}
+
+{% block content %}
+
+  <!-- Greeting -->
+  <p style="font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:16px;color:#111827;margin:0 0 8px;line-height:1.5;">
+    Hola, <strong>{{ user_name }}</strong>.
+  </p>
+
+  <!-- Main message -->
+  <p style="font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:14px;color:#475569;margin:0 0 24px;line-height:1.6;">
+    Tu cuenta ha sido creada en <strong style="color:#021A54;">{{ app_name | default("QR4All Lavalleja") }}</strong>. A continuación tenés tus credenciales de acceso iniciales:
+  </p>
+
+  <!-- ── Credentials Box ───────────────────────────────────── -->
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="background-color:#F8FAFC;border:1px solid #E5E7EB;border-radius:12px;margin-bottom:24px;">
+
+    <!-- Email row -->
+    <tr>
+      <td style="padding:16px 20px;border-bottom:1px solid #E5E7EB;">
+        <p style="font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:11px;color:#64748B;text-transform:uppercase;letter-spacing:0.08em;margin:0 0 4px;font-weight:600;">
+          Email
+        </p>
+        <p style="font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:15px;color:#111827;font-weight:500;margin:0;">
+          {{ to_email }}
+        </p>
+      </td>
+    </tr>
+
+    <!-- Password row -->
+    <tr>
+      <td style="padding:16px 20px;">
+        <p style="font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:11px;color:#64748B;text-transform:uppercase;letter-spacing:0.08em;margin:0 0 4px;font-weight:600;">
+          Contraseña temporal
+        </p>
+        <p style="font-family:'Courier New',Consolas,'Lucida Console',monospace;font-size:16px;color:#021A54;font-weight:700;background-color:#EEF2FF;padding:6px 12px;border-radius:8px;display:inline-block;letter-spacing:1px;">
+          {{ temp_password }}
+        </p>
+      </td>
+    </tr>
+  </table>
+
+  <!-- CTA Button -->
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="margin-bottom:20px;">
+    <tr>
+      <td align="center">
+        <table cellpadding="0" cellspacing="0" border="0" role="presentation">
+          <tr>
+            <td style="background-color:#021A54;border-radius:10px;">
+              <a href="{{ frontend_url }}" style="display:inline-block;padding:14px 28px;color:#FFFFFF;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:14px;font-weight:600;text-decoration:none;border-radius:10px;">
+                Ingresar a {{ app_name | default("QR4All Lavalleja") }} &rarr;
+              </a>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+
+  <!-- Divider -->
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation" style="margin-bottom:20px;">
+    <tr>
+      <td style="border-top:1px solid #E5E7EB;"></td>
+    </tr>
+  </table>
+
+  <!-- Security note -->
+  <p style="font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:13px;color:#64748B;margin:0;line-height:1.6;">
+    Por seguridad, te recomendamos cambiar tu contraseña al ingresar por primera vez. Si no solicitaste esta cuenta, contactá al equipo administrador.
+  </p>
+
+{% endblock %}

@@ -1,0 +1,52 @@
+QR4All Lavalleja — Backend instructions
+=======================================
+
+All our Coolify projects use the same canonical env variable names.
+Only the values change between local and production.
+
+Canonical variables:
+  FLASK_APP, FLASK_ENV, SECRET_KEY, WTF_CSRF_SECRET_KEY,
+  DATABASE_URL, REDIS_URL, MAIL_*, MINIO_*, CORS_ORIGINS,
+  FRONTEND_URL, PUBLIC_API_BASE_URL, PROMETHEUS_MULTIPROC_DIR.
+
+Local Windows development:
+- DEPLOYMENT_MODE=local, FLASK_ENV=development, FLASK_DEBUG=1.
+- DATABASE_URL points to localhost or 127.0.0.1.
+- REDIS_URL points to localhost.
+- MINIO_ENDPOINT points to localhost:9000.
+- FRONTEND_URL=http://localhost:5173.
+- PUBLIC_API_BASE_URL=http://localhost:5000.
+- Clear browser localStorage after migration resets (stale JWTs).
+- Run: flask db upgrade, then python wsgi.py.
+
+Coolify production:
+- DEPLOYMENT_MODE=coolify, FLASK_ENV=production, FLASK_DEBUG=0.
+- DATABASE_URL uses Coolify DB service hostname.
+- REDIS_URL uses Coolify Redis service hostname.
+- MINIO_ENDPOINT uses Coolify MinIO service hostname.
+- FRONTEND_URL is the real frontend domain.
+- PUBLIC_API_BASE_URL is the real backend API domain.
+- CORS_ORIGINS contains the allowed frontend domains.
+- Real secrets injected through Coolify, not committed.
+- See backend/.env.production.example for the full template.
+
+Short URLs:
+- QR short links are built from PUBLIC_API_BASE_URL + "/r/" + slug.
+- Do not use FRONTEND_URL or request.host for short URLs.
+
+Database migrations:
+- This project has one clean initial Alembic migration for fresh deployments.
+- On deployment, the container entrypoint runs flask db upgrade.
+- Migrations create schema only; they never create dummy data or users.
+- Create the first Super Admin manually with the command below.
+- Do not run development seed commands in production.
+
+Bootstrap:
+- Create the first admin manually with:
+  flask create-admin "Nombre Apellido" admin@example.com Strong-Password true
+
+QR logos / image library:
+- QR institutional images are stored in MinIO.
+- Users can upload a new image or select an existing one from the project
+  library (admin-only uploads; all authenticated users can browse).
+- Configure MINIO_* env vars in Coolify as for any other MinIO project.

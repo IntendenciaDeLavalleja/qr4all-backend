@@ -1,0 +1,16 @@
+# Entorno virtual Python (generado por venv/pip)
+.venv/
+venv/
+ENV/
+env/
+
+# Bytecode
+__pycache__/
+*.py[cod]
+
+# Variables de entorno locales
+.env
+
+
+# QR logo uploads
+uploads/
