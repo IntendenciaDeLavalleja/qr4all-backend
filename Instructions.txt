@@ -30,6 +30,12 @@ Coolify production:
 - Real secrets injected through Coolify, not committed.
 - See backend/.env.production.example for the full template.
 
+Coolify backend resource:
+- Base Directory: /
+- Dockerfile Location: /Dockerfile
+- Domain: https://mapi.qr4all.lavalleja.uy
+- This repository root is the backend; configure runtime environment variables in Coolify.
+
 Short URLs:
 - QR short links are built from PUBLIC_API_BASE_URL + "/r/" + slug.
 - Do not use FRONTEND_URL or request.host for short URLs.
