@@ -35,6 +35,7 @@ Coolify backend resource:
 - Dockerfile Location: /Dockerfile
 - Domain: https://mapi.qr4all.lavalleja.uy
 - This repository root is the backend; configure runtime environment variables in Coolify.
+- For temporary safe startup markers only, set STARTUP_DIAGNOSTIC_MODE=true; never log secret values.
 
 Short URLs:
 - QR short links are built from PUBLIC_API_BASE_URL + "/r/" + slug.

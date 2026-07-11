@@ -19,6 +19,11 @@ build/
 # Database
 *.db
 *.sqlite3
+instance/
+
+# Runtime-generated local artifacts; production uses MinIO for image storage.
+uploads/
+migrations_backup_before_reset/
 
 # Tests
 .pytest_cache/
