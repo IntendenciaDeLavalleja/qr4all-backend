@@ -102,6 +102,14 @@ class Config:
         or os.environ.get('DATABASE_URI')
         or 'sqlite:///gvl.db'
     )
+    if not SQLALCHEMY_DATABASE_URI.startswith('sqlite'):
+        SQLALCHEMY_ENGINE_OPTIONS = {
+            'pool_pre_ping': True,
+            'pool_recycle': int(os.environ.get('DB_POOL_RECYCLE') or 280),
+            'pool_size': int(os.environ.get('DB_POOL_SIZE') or 10),
+            'max_overflow': int(os.environ.get('DB_MAX_OVERFLOW') or 20),
+            'pool_timeout': int(os.environ.get('DB_POOL_TIMEOUT') or 30),
+        }
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # JWT
