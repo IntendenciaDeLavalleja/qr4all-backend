@@ -1,9 +1,10 @@
+import base64
 import io
 import os
 import re
 import uuid
 from flask import current_app
-from PIL import Image
+from PIL import Image, ImageColor
 from ..extensions import db
 from ..models import QrCode
 
@@ -13,6 +14,14 @@ _EC_LEVELS = {
     'Q': 'Q',
     'H': 'H',
 }
+
+# Tamaños (px, lado) permitidos para descargar; múltiplos "limpios" no son
+# necesarios porque el módulo se escala por enteros y se centra en el lienzo.
+DOWNLOAD_SIZES = (256, 512, 1024, 2048)
+DOWNLOAD_FORMATS = ('png', 'svg')
+
+_QUIET_ZONE_MODULES = 2
+_LOGO_RATIO = 0.20
 
 _COLOR_RE = re.compile(r'^#[0-9a-fA-F]{6}$')
 
@@ -131,6 +140,68 @@ def _compose_logo_onto_qr(qr_img: Image.Image, logo: Image.Image) -> Image.Image
     return composite
 
 
+def _pad_to_square(img: Image.Image, size: int, back_color: str) -> Image.Image:
+    """Center `img` on a `size`×`size` canvas filled with the background color."""
+    if img.size == (size, size):
+        return img
+    canvas = Image.new('RGB', (size, size), ImageColor.getrgb(back_color))
+    canvas.paste(img, ((size - img.width) // 2, (size - img.height) // 2))
+    return canvas
+
+
+def _render_svg(
+    modules,
+    size: int,
+    fill_color: str,
+    back_color: str,
+    logo_bytes: bytes | None,
+) -> bytes:
+    """Build a vector QR. Each dark module is a unit square, so it scales without
+    any resampling; `size` only sets the default width/height of the document."""
+    count = len(modules) + 2 * _QUIET_ZONE_MODULES
+    offset = _QUIET_ZONE_MODULES
+    path = ''.join(
+        f'M{x + offset},{y + offset}h1v1h-1z'
+        for y, row in enumerate(modules)
+        for x, dark in enumerate(row)
+        if dark
+    )
+
+    parts = [
+        '<?xml version="1.0" encoding="UTF-8"?>',
+        f'<svg xmlns="http://www.w3.org/2000/svg" '
+        f'xmlns:xlink="http://www.w3.org/1999/xlink" '
+        f'width="{size}" height="{size}" viewBox="0 0 {count} {count}">',
+        f'<rect width="{count}" height="{count}" fill="{back_color}"/>',
+        f'<path d="{path}" fill="{fill_color}"/>',
+    ]
+
+    if logo_bytes:
+        # Misma proporción que el PNG: logo al 20% del lado y fondo blanco redondeado.
+        logo_units = _LOGO_RATIO * count
+        pad_units = logo_units * 0.12
+        bg_units = logo_units + pad_units * 2
+        bg_pos = (count - bg_units) / 2
+        logo_pos = (count - logo_units) / 2
+
+        logo = _open_rgba_logo(logo_bytes, 512)
+        logo_buf = io.BytesIO()
+        logo.save(logo_buf, format='PNG')
+        logo_uri = 'data:image/png;base64,' + base64.b64encode(logo_buf.getvalue()).decode('ascii')
+
+        parts.append(
+            f'<rect x="{bg_pos:.4f}" y="{bg_pos:.4f}" width="{bg_units:.4f}" height="{bg_units:.4f}" '
+            f'rx="{bg_units * 0.18:.4f}" fill="#ffffff"/>'
+        )
+        parts.append(
+            f'<image x="{logo_pos:.4f}" y="{logo_pos:.4f}" width="{logo_units:.4f}" height="{logo_units:.4f}" '
+            f'xlink:href="{logo_uri}"/>'
+        )
+
+    parts.append('</svg>')
+    return ''.join(parts).encode('utf-8')
+
+
 def generate_qr_image(
     url: str,
     fmt: str = 'png',
@@ -172,42 +243,38 @@ def generate_qr_image(
     requested_ec = error_correction.upper() if error_correction.upper() in _EC_LEVELS else 'M'
     ec_level = ec_map.get(requested_ec if not has_logo else 'H', ERROR_CORRECT_M)
 
-    box_size = max(1, size // 25)
-    border = 2
-
     qr_obj = qrcode.QRCode(
         version=None,
         error_correction=ec_level,
-        box_size=box_size,
-        border=border,
+        box_size=1,
+        border=_QUIET_ZONE_MODULES,
     )
     qr_obj.add_data(url)
     qr_obj.make(fit=True)
 
     if fmt.lower() == 'svg':
-        import qrcode.image.svg as svg_mod
-        factory = svg_mod.SvgPathImage
-        img = qr_obj.make_image(
-            image_factory=factory,
-            fill_color=fill_color,
-            back_color=back_color,
-        )
-        buf = io.BytesIO()
-        img.save(buf)
-        return buf.getvalue(), 'image/svg+xml'
-    else:
-        img = qr_obj.make_image(fill_color=fill_color, back_color=back_color)
-        img = img.resize((size, size))
+        svg_bytes = _render_svg(qr_obj.modules, size, fill_color, back_color, logo_bytes)
+        return svg_bytes, 'image/svg+xml'
 
-        if has_logo:
-            logo_target_size = int(size * 0.20)
-            logo = _open_rgba_logo(logo_bytes, logo_target_size)
-            img = _compose_logo_onto_qr(img, logo)
+    # El lado final nunca puede ser menor que la cantidad de módulos, o se recortaría el QR.
+    module_count = qr_obj.modules_count + 2 * _QUIET_ZONE_MODULES
+    size = max(size, module_count)
 
-        buf = io.BytesIO()
-        final = img.convert('RGBA') if has_logo else img.convert('RGB')
-        final.save(buf, format='PNG')
-        return buf.getvalue(), 'image/png'
+    # Escalado entero por módulo (sin resample) para que todos midan lo mismo;
+    # el resto del lienzo se completa con el color de fondo.
+    qr_obj.box_size = max(1, size // module_count)
+    img = qr_obj.make_image(fill_color=fill_color, back_color=back_color).convert('RGB')
+    img = _pad_to_square(img, size, back_color)
+
+    if has_logo:
+        logo_target_size = int(size * _LOGO_RATIO)
+        logo = _open_rgba_logo(logo_bytes, logo_target_size)
+        img = _compose_logo_onto_qr(img, logo)
+
+    buf = io.BytesIO()
+    final = img.convert('RGBA') if has_logo else img.convert('RGB')
+    final.save(buf, format='PNG')
+    return buf.getvalue(), 'image/png'
 
 
 def create_qr_record(

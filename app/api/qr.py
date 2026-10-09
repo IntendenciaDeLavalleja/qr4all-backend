@@ -132,17 +132,31 @@ def download_qr(link_id, qr_id):
         if not qr:
             return _bad("QR no encontrado.", 404)
 
+        fmt = request.args.get('format', qr.format or 'png').lower()
+        if fmt not in qr_service.DOWNLOAD_FORMATS:
+            return _bad("Formato no soportado. Usá png o svg.")
+
+        size = qr.size
+        if 'size' in request.args:
+            try:
+                size = int(request.args['size'])
+            except ValueError:
+                return _bad("Tamaño inválido.")
+            if size not in qr_service.DOWNLOAD_SIZES:
+                allowed = ', '.join(str(s) for s in qr_service.DOWNLOAD_SIZES)
+                return _bad(f"Tamaño no permitido. Opciones: {allowed} px.")
+
         image_bytes, mimetype = qr_service.generate_qr_image(
             url=qr.generated_url,
-            fmt=qr.format,
-            size=qr.size,
+            fmt=fmt,
+            size=size,
             fill_color=qr.fill_color,
             back_color=qr.back_color,
             error_correction=qr.error_correction,
             qr=qr,
         )
 
-        ext = 'svg' if qr.format == 'svg' else 'png'
+        ext = 'svg' if fmt == 'svg' else 'png'
         filename = f"qr_{qr.link.slug}_{qr.id}.{ext}"
 
         return send_file(
